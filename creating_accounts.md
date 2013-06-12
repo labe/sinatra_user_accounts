@@ -60,20 +60,11 @@ Regardless, each form will need to POST to its own route.
 
 ```ruby
 post '/login' do
-  # params are passed in from the form
-  # if user is authenticated, 
-  #    "logs user in"
-  #    (which really just means setting the session cookie)
-  #    redirects the user somewhere (maybe '/' ?)
-  # else if user auth fails,
-  #    redirects user, probably back to '/login'
+  # stuff we'll come back to soon
 end
 
 post '/new_account' do
-  # (params are passed in from the form)
-  user = User.create(params[:user])
-  session[:user_id] = user.id
-  # redirects user somewhere (maybe '/' ?)
+  # stuff we'll come back to soon
 end
 ```
 And of course you'll need:
