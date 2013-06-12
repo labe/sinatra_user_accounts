@@ -4,7 +4,7 @@
 
 A very basic schema for a user typically looks like this:
 
-```
+```ruby
 def change
   create_table :users do |t|
     t.string  :username
@@ -18,7 +18,7 @@ Users can have plenty of other information about them or their account stored in
 
 ### Make validations on the model
 
-```
+```ruby
 class User < ActiveRecord::Base
   validates :username, :presence => true, 
                        :uniqueness => true
@@ -38,7 +38,7 @@ Validations mean a User object won't ever be saved unless they meet this criteri
 
 Routes will depend on your UX design. Should login and sign up be on separate pages? If creating an account requires a lot of fields, each should probably have its own page:
 
-```
+```ruby
 get '/login' do
   erb :login
 end
@@ -58,7 +58,7 @@ end
 
 Regardless, each form will need to POST to its own route.
 
-```
+```ruby
 post '/login' do
   # params are passed in from the form
   # if user is authenticated, 
@@ -78,7 +78,7 @@ end
 ```
 And of course you'll need:
 
-```
+```ruby
 get '/logout' do
   session[:user_id] = nil
   redirect_to '/'
@@ -86,7 +86,7 @@ end
 ```
 Might your users also have a profile page? Maybe something like:
 
-```
+```ruby
 get '/users/:username' do
   erb :user
 end
@@ -98,7 +98,7 @@ The Sinatra skeleton contains a "helpers" folder under "app". Methods saved in t
 
 Create a file called <code>user_helper.rb</code> (or something akin to that), and create a method <code>current_user</code>:
 
-```
+```ruby
 def current_user
   User.find(session[:user_id]) if session[:user_id]
 end
@@ -111,7 +111,7 @@ There are a few other ways to write code that produces the same results. This on
 
 Users should *probably* be able to sign in or logout or access their profile page at any time, regardless of which page they're on, right? (Probably right.) Put those babies in a header above your <code><%= yield %></code> statement in your <code>layout.erb</code> view.
 
-```
+```ruby
 <body>
   <div class="header">
     <h5><a href="/">Home</a></h5>
@@ -152,7 +152,7 @@ So now that data can be sent through, let's build out those POST routes.
 
 New accounts are fairly straight-forward, since we're not doing anything with password encryption (BCrypt) just yet. Take in the form params and use them to create a new User, then set the session cookie:
 
-```
+```ruby
 post '/new_account' do
   user = User.create(params[:user])
   session[:user_id] = user.id
@@ -171,7 +171,7 @@ If your login form takes in a username and password, the process should go:
 4. If it doesn't match, you'll probably want to just send them back to the login page so they can try again.
 5. (You can get fancy and show an error message on the login page so the user knows why they've been sent back there!)
 
-```
+```ruby
 post '/login' do
   user = User.find_by_username(params[:user][:username])
   if user.password == params[:user][:password]
@@ -184,7 +184,7 @@ end
 ```
 Except, oh man, model code in the controller! This can be refactored to:
 
-```
+```ruby
 post '/login' do
   if user = User.authenticate(params[:user])
   	session[:user_id] = user.id
@@ -194,7 +194,7 @@ post '/login' do
   end
 end
 ```
-```
+```ruby
 class User < ActiveRecord::Base
 
   def self.authenticate(params)
@@ -230,13 +230,13 @@ Maybe your app has routes you only want logged-in users to access. I.e., only lo
 
 Let's pretend this is a blogging app, and you have a route for the page that contains the form used to create a new post:
 
-```
+```ruby
 get '/create_post' do
 end
 ```
 Because you have that helper method, you can do something like:
 
-```
+```ruby
 get '/create_post' do
   if current_user
     erb :create_post
