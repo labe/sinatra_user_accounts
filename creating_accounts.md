@@ -24,7 +24,7 @@ class User < ActiveRecord::Base
                        :uniqueness => true
   validates :email,    :presence => true,
                        :uniqueness => true
-                       :format => {:with => /\w+@\w+\.\w+/)
+                       :format => { :with => /\w+@\w+\.\w+/) }
   validates :password, :presence => true
 end
 ```
