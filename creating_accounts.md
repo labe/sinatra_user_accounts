@@ -12,6 +12,8 @@ def change
     t.string  :password
     t.timestamps
   end
+  
+  add_index :users, :username
 end
 ```
 Users can have plenty of other information about them or their account stored in their table, of course-- <code>full_name</code>, <code>hometown</code>, <code>is_private</code>. If ever stumped about what to include in the schema, think of apps you use and the information included in your profile.
@@ -48,7 +50,7 @@ get '/new_account' do
 end
 ```
 
-If creating an account is not much different from logging in, however, it may make more sense to consolidate both forms on the same page.
+If it's your opinion that creating an account is not much different from logging in, however, it may make more sense to consolidate both forms on the same page.
 
 ```
 get '/login' do
@@ -123,7 +125,7 @@ The above specifies that if the <code>current_user</code> helper method returns 
 * display a "Logout" link
 * display that they are "Signed in as [username]" (and the username links to their profile page)
 
-Otherwise, just display a link to the login page (and to the "create an account" page, if you've chosen to separate them).
+Otherwise, just display a link to the login page (and to the "create an account" page, if you've chosen to keep those separate).
 
 ### Make the views
 
@@ -159,8 +161,8 @@ If your login form takes in a username and password, the process should go:
 1. Find the user based on <code>params[:user][:username]</code>
 2. Check if <code>user.password</code> matches <code>params[:user][:password]</code>
 3. If it matches, redirect the user to wherever (see above).
-4. If it doesn't match, you'll probably want to just send them back to the login page so they can try again.
-5. (You can get fancy and show an error message on the login page so the user knows why they've been sent back there!)
+4. If it doesn't match, you'll probably want to display the login page again so they can retry submitting.
+5. (You can even get fancy and show the error message(s) on the login page so the user knows why they're still seeing the same page!)
 
 ```ruby
 post '/login' do
@@ -169,7 +171,8 @@ post '/login' do
   	session[:user_id] = user.id
   	redirect '/'
   else
-    redirect '/login'
+    @errors = user.errors.messages
+    erb :login
   end
 end
 ```
@@ -181,7 +184,8 @@ post '/login' do
   	session[:user_id] = user.id
   	redirect '/'
   else
-    redirect '/login'
+    @errors = user.errors.messages
+    erb :login
   end
 end
 ```
@@ -213,7 +217,7 @@ The second line is saying:
 So if you look back at the refactored route, it's saying:
 
 * If <code>User.authenticate</code> returns a user, store that user in a local variable <code>user</code>, set the session cookie for this user and redirect to the root path
-* Else redirect to the login page so the user can try again
+* Else reload the login page so the user can try again
 
 ### Back to the helper method
 
@@ -238,6 +242,17 @@ end
 ```
 which just says, if <code>current_user</code> returns a user, load this page and show the form for creating a new post. Otherwise, if <code>current_user</code> returns <code>nil</code>, redirect the user to the login page.
 
+You could also use a <code>before</code> filter method:
+
+```ruby
+before '/create_post' do
+  redirect '/login' if !current_user
+end
+
+get '/create_post' do
+  erb :create_post
+end
+```
 ### Bonus funtastical features to think about
 
 * If a non-logged in user clicks on a link to a protected route (meaning, only logged-in users can see that page) and is redirected to the login page, and then the user successfully signs in… wouldn't it be nice if the user could be redirected to the page they were trying to access in the first place?
