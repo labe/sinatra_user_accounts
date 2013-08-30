@@ -154,6 +154,34 @@ end
 ```
 You can choose to redirect them wherever it makes the most sense to you to send your users after they've made a new account. Maybe it's back to the home page? Maybe it's to their profile page (<code>redirect "/users/#{user.username}"</code>? Maybe it's something fancier? Totally up to you.
 
+Except! We've put validations on the User model. What if someone tries to create a new account with an invalid submission?
+
+We can handle this by redefining the User.create method:
+
+```ruby
+class User < ActiveRecord::Base
+  def self.create(params)
+    user = User.new(params)
+    user.save
+    user
+  end
+end
+```
+and then the controller action becomes
+```ruby
+post '/new_account' do
+  user = User.create(params[:user])
+  if user.save
+    session[:user_id] = user.id
+    redirect '/'
+  else
+    @errors = user.errors.messages
+    erb :login
+  end
+end
+```
+If the submission is valid, <code>User.create(params[:user])</code> will return a user object that can successfully save, meaning session[:user_id] will be set and the app will redirect. An invalid submission will return the user object (which was initialialized on <code>User.new(params)</code>) which will now have the errors.messages associated with it.
+
 Logging in is a little tricker, since we'll need to make sure the user has submitted the correct password.
 
 If your login form takes in a username and password, the process should go:
