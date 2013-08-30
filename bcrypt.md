@@ -11,10 +11,10 @@ gem 'bcrypt-ruby'
 In your <code>/config/environment.rb</code> file:
 
 ```ruby
-require 'bcryot'
+require 'bcrypt'
 ```
 
-In your schema,
+In your schema:
 
 ```ruby
 t.string  :password
@@ -25,7 +25,7 @@ SHOULD but does not *have* to become:
 t.string  :password_hash
 ```
 
-("SHOULD" because technically, you'll now be storing the hashed password, not the password itself, and this naming convention will lessen confusion in the encryption/decryption methods.
+("SHOULD" because technically, you'll now be storing the hashed password, not the password itself, and this naming convention will lessen confusion in the encryption/decryption methods.)
 
 In your <code>User</code> model (or whichever model is going to have the password attribute):
 
@@ -53,11 +53,11 @@ class User < ActiveRecord::Base
 end
 ```
 
-What's going on here?
+###What's going on here?
 
 When you create a new user, <code>user.password = params[:password]</code> is calling <code>def password=(pass)</code>, where the <code>pass</code> argument is now <code>params[:password]</code>. BCrypt takes <code>pass</code> and creates a hash out of it, then stores it in an instance variable <code>@password</code>, then assigns it to the user's <code>password_hash</code> attribute.
 
-For logging in: remember that User.authenticate method?
+For logging in: remember that <code>User.authenticate</code> method?
 
 ```ruby
   def self.authenticate(params)
