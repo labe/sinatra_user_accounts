@@ -12,6 +12,8 @@ def change
     t.string  :password
     t.timestamps
   end
+  
+  add_index :users, :username
 end
 ```
 Users can have plenty of other information about them or their account stored in their table, of course-- <code>full_name</code>, <code>hometown</code>, <code>is_private</code>. If ever stumped about what to include in the schema, think of apps you use and the information included in your profile.
@@ -24,11 +26,11 @@ class User < ActiveRecord::Base
                        :uniqueness => true
   validates :email,    :presence => true,
                        :uniqueness => true
-                       :format => {:with => /\w+@\w+\.\w+/)
+                       :format => { :with => /\w+@\w+\.\w+/ }
   validates :password, :presence => true
 end
 ```
-Validations mean a User object won't ever be saved unless they meet this criteria. The above code says that a User cannot exist in the database unless it has 
+Validations mean a User object won't ever be saved unless it meets this criteria. The above code says that a User cannot exist in the database unless it has 
 
 * a username (which is unique)
 * an email address (which is unique and is formatted based on a RegEx (this is a very loose RegEx example that says "at least one word character (letter, number, underscore) followed by an "@", followed by at least one word character followed by a ".", followed by at least one word character"))
@@ -48,7 +50,7 @@ get '/new_account' do
 end
 ```
 
-If creating an account is not much different from logging in, however, it may make more sense to consolidate both forms on the same page.
+If it's your opinion that creating an account is not much different from logging in, however, it may make more sense to consolidate both forms on the same page.
 
 ```
 get '/login' do
@@ -123,14 +125,14 @@ The above specifies that if the <code>current_user</code> helper method returns 
 * display a "Logout" link
 * display that they are "Signed in as [username]" (and the username links to their profile page)
 
-Otherwise, just display a link to the login page (and to the "create an account" page, if you've chosen to separate them).
+Otherwise, just display a link to the login page (and to the "create an account" page, if you've chosen to keep those separate).
 
 ### Make the views
 
 You know how to create forms, so I won't belabor the point here. Things to remember:
 
 * When naming fields, match them to the database table column names (e.g.: <code>username</code>,<code>email</code>,<code>password</code>)
-* Get fancy and put them in a hash
+* Get fancy and put them in a namespaced hash
   * <code>user[username]</code>,<code>user[email]</code>,<code>user[password]</code> will POST:
 	*  <code> params => {user => {username: < username >, email: < email >, password: < password > }</code>
 	* **NOTE:** there is no colon (":") used in the input field names. It's just <code>user[username]</code>.
@@ -152,6 +154,34 @@ end
 ```
 You can choose to redirect them wherever it makes the most sense to you to send your users after they've made a new account. Maybe it's back to the home page? Maybe it's to their profile page (<code>redirect "/users/#{user.username}"</code>? Maybe it's something fancier? Totally up to you.
 
+Except! We've put validations on the User model. What if someone tries to create a new account with an invalid submission?
+
+We can handle this by redefining the User.create method:
+
+```ruby
+class User < ActiveRecord::Base
+  def self.create(params)
+    user = User.new(params)
+    user.save
+    user
+  end
+end
+```
+and then the controller action becomes
+```ruby
+post '/new_account' do
+  user = User.create(params[:user])
+  if user.save
+    session[:user_id] = user.id
+    redirect '/'
+  else
+    @errors = user.errors.messages
+    erb :login
+  end
+end
+```
+If the submission is valid, <code>User.create(params[:user])</code> will return a user object that can successfully save, meaning session[:user_id] will be set and the app will redirect. An invalid submission will return an unsaved user object (which was initialialized on <code>User.new(params)</code>) which will now have the errors.messages associated with it.
+
 Logging in is a little tricker, since we'll need to make sure the user has submitted the correct password.
 
 If your login form takes in a username and password, the process should go:
@@ -159,8 +189,8 @@ If your login form takes in a username and password, the process should go:
 1. Find the user based on <code>params[:user][:username]</code>
 2. Check if <code>user.password</code> matches <code>params[:user][:password]</code>
 3. If it matches, redirect the user to wherever (see above).
-4. If it doesn't match, you'll probably want to just send them back to the login page so they can try again.
-5. (You can get fancy and show an error message on the login page so the user knows why they've been sent back there!)
+4. If it doesn't match, you'll probably want to display the login page again so they can retry submitting.
+5. (You can even get fancy and show the error message(s) on the login page so the user knows why they're still seeing the same page!)
 
 ```ruby
 post '/login' do
@@ -169,7 +199,8 @@ post '/login' do
   	session[:user_id] = user.id
   	redirect '/'
   else
-    redirect '/login'
+    @errors = user.errors.messages
+    erb :login
   end
 end
 ```
@@ -181,7 +212,8 @@ post '/login' do
   	session[:user_id] = user.id
   	redirect '/'
   else
-    redirect '/login'
+    @errors = user.errors.messages
+    erb :login
   end
 end
 ```
@@ -213,7 +245,7 @@ The second line is saying:
 So if you look back at the refactored route, it's saying:
 
 * If <code>User.authenticate</code> returns a user, store that user in a local variable <code>user</code>, set the session cookie for this user and redirect to the root path
-* Else redirect to the login page so the user can try again
+* Else reload the login page so the user can try again
 
 ### Back to the helper method
 
@@ -238,9 +270,20 @@ end
 ```
 which just says, if <code>current_user</code> returns a user, load this page and show the form for creating a new post. Otherwise, if <code>current_user</code> returns <code>nil</code>, redirect the user to the login page.
 
+You could also use a <code>before</code> filter method:
+
+```ruby
+before '/create_post' do
+  redirect '/login' if !current_user
+end
+
+get '/create_post' do
+  erb :create_post
+end
+```
 ### Bonus funtastical features to think about
 
 * If a non-logged in user clicks on a link to a protected route (meaning, only logged-in users can see that page) and is redirected to the login page, and then the user successfully signs in… wouldn't it be nice if the user could be redirected to the page they were trying to access in the first place?
 * How can the app know when to display an error message?
-* Remember: you can store ~ 4 Kb in a session
+* Remember: you can store ~ 4 kB in a session
 * If a user is logged in, are there still pages that user shouldn't be able to access? (Think about editing a profile page. Should users be able to access the profile edit page of other users? (Easy answer: no)).
