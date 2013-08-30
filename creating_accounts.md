@@ -30,7 +30,7 @@ class User < ActiveRecord::Base
   validates :password, :presence => true
 end
 ```
-Validations mean a User object won't ever be saved unless they meet this criteria. The above code says that a User cannot exist in the database unless it has 
+Validations mean a User object won't ever be saved unless it meets this criteria. The above code says that a User cannot exist in the database unless it has 
 
 * a username (which is unique)
 * an email address (which is unique and is formatted based on a RegEx (this is a very loose RegEx example that says "at least one word character (letter, number, underscore) followed by an "@", followed by at least one word character followed by a ".", followed by at least one word character"))
@@ -132,7 +132,7 @@ Otherwise, just display a link to the login page (and to the "create an account"
 You know how to create forms, so I won't belabor the point here. Things to remember:
 
 * When naming fields, match them to the database table column names (e.g.: <code>username</code>,<code>email</code>,<code>password</code>)
-* Get fancy and put them in a hash
+* Get fancy and put them in a namespaced hash
   * <code>user[username]</code>,<code>user[email]</code>,<code>user[password]</code> will POST:
 	*  <code> params => {user => {username: < username >, email: < email >, password: < password > }</code>
 	* **NOTE:** there is no colon (":") used in the input field names. It's just <code>user[username]</code>.
@@ -180,7 +180,7 @@ post '/new_account' do
   end
 end
 ```
-If the submission is valid, <code>User.create(params[:user])</code> will return a user object that can successfully save, meaning session[:user_id] will be set and the app will redirect. An invalid submission will return the user object (which was initialialized on <code>User.new(params)</code>) which will now have the errors.messages associated with it.
+If the submission is valid, <code>User.create(params[:user])</code> will return a user object that can successfully save, meaning session[:user_id] will be set and the app will redirect. An invalid submission will return an unsaved user object (which was initialialized on <code>User.new(params)</code>) which will now have the errors.messages associated with it.
 
 Logging in is a little tricker, since we'll need to make sure the user has submitted the correct password.
 
@@ -285,5 +285,5 @@ end
 
 * If a non-logged in user clicks on a link to a protected route (meaning, only logged-in users can see that page) and is redirected to the login page, and then the user successfully signs in… wouldn't it be nice if the user could be redirected to the page they were trying to access in the first place?
 * How can the app know when to display an error message?
-* Remember: you can store ~ 4 Kb in a session
+* Remember: you can store ~ 4 kB in a session
 * If a user is logged in, are there still pages that user shouldn't be able to access? (Think about editing a profile page. Should users be able to access the profile edit page of other users? (Easy answer: no)).
