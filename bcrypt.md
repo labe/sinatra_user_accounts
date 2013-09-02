@@ -45,7 +45,9 @@ class User < ActiveRecord::Base
   #remember how we redefined User.create before? That gets a modification as well:
   
   def self.create(params)
-    user = User.new(params)
+    user = User.new(
+      :username => params[:username],
+      :email => params[:email] )
     user.password = params[:password]
     user.save
     user
